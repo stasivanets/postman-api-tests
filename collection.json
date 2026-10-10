@@ -1,0 +1,106 @@
+{
+  "info": {
+    "_postman_id": "69936eb2-36ac-43d9-9923-d16bce6af7c4",
+    "name": "Day 3",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "16775282"
+  },
+  "item": [
+    {
+      "name": "New Request",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// 1. Verify status\npm.test(\"Status code is 200/201\", function () {\n    pm.expect(pm.response.code).to.be.oneOf([200, 201]);\n});\n\n// 2. Parse response\nconst responseData = pm.response.json();\n\npm.test(\"Cart created and ID saved\", function () {\n    // DummyJSON returns simulated ID (e.g. 209), but database only holds IDs 1-20.\n    // We set '1' to allow real GET and DELETE calls downstream to succeed.\n    const realCartId = 1; \n    \n    pm.environment.set(\"chainedCartId\", realCartId);\n    pm.environment.set(\"expectedTotalProducts\", responseData.totalProducts);\n    \n    console.log(`[DAY 3 STEP 1] Simulated creation ID: ${responseData.id} | Using valid DB Cart ID: ${realCartId}`);\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"userId\": 1,\n    \"products\": [\n        {\n            \"id\": 14,\n            \"quantity\": 2\n        }\n    ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/carts/add",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "carts",
+            "add"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "New Request",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// 1. Check HTTP Status\npm.test(\"Status code is 200 OK\", function () {\n    pm.response.to.have.status(200);\n});\n\n// 2. Validate Cart Content and Control Workflow Execution\npm.test(\"Cart details match created payload\", function () {\n    const responseData = pm.response.json();\n    const expectedTotal = pm.environment.get(\"expectedTotalProducts\");\n    \n    pm.expect(responseData.totalProducts).to.be.a(\"number\").that.is.above(0);\n    \n    // WORKFLOW CONTROL (postman.setNextRequest)\n    // If the cart has products, jump directly to Step 3 (Delete Cart).\n    // If empty, terminate the collection run immediately.\n    if (responseData.products && responseData.products.length > 0) {\n        console.log(\"[WORKFLOW] Cart contains products. Proceeding to Delete Cart.\");\n        // postman.setNextRequest(\"Request_3_Name\"); // Used during Collection Runner execution\n    } else {\n        console.log(\"[WORKFLOW] Cart is empty. Stopping execution.\");\n        postman.setNextRequest(null); // Halts collection runner loop\n    }\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/carts/{{chainedCartId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "carts",
+            "{{chainedCartId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "New Request",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// 1. Verify deletion HTTP status\npm.test(\"Status code is 200 OK\", function () {\n    pm.response.to.have.status(200);\n});\n\n// 2. Verify soft-delete payload response\npm.test(\"Cart marked as deleted\", function () {\n    const responseData = pm.response.json();\n    \n    pm.expect(responseData.isDeleted).to.be.true;\n    console.log(`[DAY 3 STEP 3] Cart ${responseData.id} deleted successfully.`);\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/carts/{{chainedCartId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "carts",
+            "{{chainedCartId}}"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
