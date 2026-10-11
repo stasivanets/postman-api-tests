@@ -22,9 +22,9 @@ jobs:
         run: |
           npm install -g newman newman-reporter-htmlextra
 
-      - name: Run Postman Tests
+      - name: Run Postman Tests with Data Driver
         run: |
-          newman run collection.json -e environment.json -r cli,htmlextra --reporter-htmlextra-export newman/report.html
+          newman run collection.json -e environment.json -d test-data.json -r cli,htmlextra --reporter-htmlextra-export newman/report.html
 
       - name: Upload HTML Test Report Artifact
         if: always()
