@@ -1,30 +1,112 @@
 {
   "info": {
-    "_postman_id": "69936eb2-36ac-43d9-9923-d16bce6af7c4",
-    "name": "Day 3",
+    "_postman_id": "4ef6b519-5d0e-4692-b5e7-f05831292bbc",
+    "name": "Capstone E2E API Suite",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "16775282"
   },
   "item": [
     {
-      "name": "New Request",
+      "name": "POST /auth/login (Token Generation)",
       "event": [
         {
           "listen": "test",
           "script": {
             "type": "text/javascript",
             "exec": [
-              "// 1. Verify status\npm.test(\"Status code is 200/201\", function () {\n    pm.expect(pm.response.code).to.be.oneOf([200, 201]);\n});\n\n// 2. Parse response\nconst responseData = pm.response.json();\n\npm.test(\"Cart created and ID saved\", function () {\n    // DummyJSON returns simulated ID (e.g. 209), but database only holds IDs 1-20.\n    // We set '1' to allow real GET and DELETE calls downstream to succeed.\n    const realCartId = 1; \n    \n    pm.environment.set(\"chainedCartId\", realCartId);\n    pm.environment.set(\"expectedTotalProducts\", responseData.totalProducts);\n    \n    console.log(`[DAY 3 STEP 1] Simulated creation ID: ${responseData.id} | Using valid DB Cart ID: ${realCartId}`);\n});"
+              "pm.test(\"Auth successful - Token acquired\", function () {\n    pm.response.to.have.status(200);\n    const response = pm.response.json();\n    pm.expect(response).to.have.property(\"accessToken\");\n    \n    // Save dynamic Bearer token and authenticated userId\n    pm.environment.set(\"authToken\", response.accessToken);\n    pm.environment.set(\"capstoneUserId\", response.id);\n});"
             ]
           }
         }
       ],
       "request": {
         "method": "POST",
-        "header": [],
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
         "body": {
           "mode": "raw",
-          "raw": "{\n    \"userId\": 1,\n    \"products\": [\n        {\n            \"id\": 14,\n            \"quantity\": 2\n        }\n    ]\n}",
+          "raw": "{\n  \"username\": \"{{authUsername}}\",\n  \"password\": \"{{authPassword}}\",\n  \"expiresInMins\": 30\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "GET /auth/me",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Token is valid - Profile retrieved\", function () {\n    pm.response.to.have.status(200);\n    const response = pm.response.json();\n    pm.expect(response.id).to.eql(pm.environment.get(\"capstoneUserId\"));\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/me",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "me"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "POST /carts/add",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Cart created successfully\", function () {\n    pm.response.to.have.status(201);\n    const response = pm.response.json();\n    \n    // Save generated Cart ID (or fallback to valid DB ID for DummyJSON mock limitations)\n    const createdCartId = response.id > 50 ? 1 : response.id;\n    pm.environment.set(\"capstoneCartId\", createdCartId);\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": {{capstoneUserId}},\n  \"products\": [\n    { \"id\": 1, \"quantity\": 2 },\n    { \"id\": 2, \"quantity\": 1 }\n  ]\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -45,14 +127,14 @@
       "response": []
     },
     {
-      "name": "New Request",
+      "name": "GET /carts/{{capstoneCartId}}",
       "event": [
         {
           "listen": "test",
           "script": {
             "type": "text/javascript",
             "exec": [
-              "// 1. Check HTTP Status\npm.test(\"Status code is 200 OK\", function () {\n    pm.response.to.have.status(200);\n});\n\n// 2. Validate Cart Content and Control Workflow Execution\npm.test(\"Cart details match created payload\", function () {\n    const responseData = pm.response.json();\n    const expectedTotal = pm.environment.get(\"expectedTotalProducts\");\n    \n    pm.expect(responseData.totalProducts).to.be.a(\"number\").that.is.above(0);\n    \n    // WORKFLOW CONTROL (postman.setNextRequest)\n    // If the cart has products, jump directly to Step 3 (Delete Cart).\n    // If empty, terminate the collection run immediately.\n    if (responseData.products && responseData.products.length > 0) {\n        console.log(\"[WORKFLOW] Cart contains products. Proceeding to Delete Cart.\");\n        // postman.setNextRequest(\"Request_3_Name\"); // Used during Collection Runner execution\n    } else {\n        console.log(\"[WORKFLOW] Cart is empty. Stopping execution.\");\n        postman.setNextRequest(null); // Halts collection runner loop\n    }\n});"
+              "pm.test(\"Cart state matches created resource\", function () {\n    pm.response.to.have.status(200);\n    const response = pm.response.json();\n    pm.expect(response).to.have.property(\"products\");\n    pm.expect(response.products.length).to.be.above(0);\n});"
             ]
           }
         }
@@ -61,27 +143,27 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "{{baseUrl}}/carts/{{chainedCartId}}",
+          "raw": "{{baseUrl}}/carts/{{capstoneCartId}}",
           "host": [
             "{{baseUrl}}"
           ],
           "path": [
             "carts",
-            "{{chainedCartId}}"
+            "{{capstoneCartId}}"
           ]
         }
       },
       "response": []
     },
     {
-      "name": "New Request",
+      "name": "DELETE /carts/{{capstoneCartId}}",
       "event": [
         {
           "listen": "test",
           "script": {
             "type": "text/javascript",
             "exec": [
-              "// 1. Verify deletion HTTP status\npm.test(\"Status code is 200 OK\", function () {\n    pm.response.to.have.status(200);\n});\n\n// 2. Verify soft-delete payload response\npm.test(\"Cart marked as deleted\", function () {\n    const responseData = pm.response.json();\n    \n    pm.expect(responseData.isDeleted).to.be.true;\n    console.log(`[DAY 3 STEP 3] Cart ${responseData.id} deleted successfully.`);\n});"
+              "pm.test(\"Cart marked as deleted\", function () {\n    pm.response.to.have.status(200);\n    const response = pm.response.json();\n    pm.expect(response.isDeleted).to.be.true;\n});"
             ]
           }
         }
@@ -90,13 +172,13 @@
         "method": "DELETE",
         "header": [],
         "url": {
-          "raw": "{{baseUrl}}/carts/{{chainedCartId}}",
+          "raw": "{{baseUrl}}/carts/{{capstoneCartId}}",
           "host": [
             "{{baseUrl}}"
           ],
           "path": [
             "carts",
-            "{{chainedCartId}}"
+            "{{capstoneCartId}}"
           ]
         }
       },
