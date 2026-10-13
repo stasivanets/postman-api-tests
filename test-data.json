@@ -1,26 +1,12 @@
 [
   {
-    "testCase": "Positive - Standard Cart",
-    "userId": 1,
-    "productId": 14,
-    "quantity": 2,
-    "expectedStatus": 201,
-    "shouldFail": false
+    "title": "DDT Post Title 1",
+    "body": "Content for post iteration 1",
+    "userId": 1
   },
   {
-    "testCase": "Boundary - High Quantity Cart",
-    "userId": 1,
-    "productId": 1,
-    "quantity": 999,
-    "expectedStatus": 201,
-    "shouldFail": false
-  },
-  {
-    "testCase": "Negative - Invalid User ID",
-    "userId": -999,
-    "productId": 1,
-    "quantity": 1,
-    "expectedStatus": 400,
-    "shouldFail": true
+    "title": "DDT Post Title 2",
+    "body": "Content for post iteration 2",
+    "userId": 1
   }
 ]
