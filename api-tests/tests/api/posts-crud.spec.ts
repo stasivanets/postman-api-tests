@@ -1,7 +1,5 @@
 import { test, expect } from '@playwright/test';
 
-test.use({ extraHTTPHeaders: { Authorization: 'Bearer my-test-token' } });
-
 test('PUT updates a post', async ({ request }) => {
   const response = await request.put('/posts/1', {
     data: { id: 1, title: 'Updated title', body: 'new body', userId: 1 },
