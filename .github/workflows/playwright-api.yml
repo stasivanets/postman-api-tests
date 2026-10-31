@@ -16,7 +16,13 @@ jobs:
         with:
           node-version: 20
       - run: npm ci
+      - name: Check token is set
+        run: if [ -n "$API_TOKEN" ]; then echo "API_TOKEN is set"; else echo "API_TOKEN is EMPTY"; fi
+        env:
+          API_TOKEN: ${{ secrets.API_TOKEN }}
       - run: npx playwright test tests/api --project=chromium
+        env:
+          API_TOKEN: ${{ secrets.API_TOKEN }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
