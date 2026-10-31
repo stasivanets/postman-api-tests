@@ -16,10 +16,15 @@ test('DELETE removes a post', async ({ request }) => {
 });
 
 test('request with a Bearer token succeeds', async ({ request }) => {
+  const token = process.env.API_TOKEN;
+  test.skip(!token, 'API_TOKEN is not set');
+
   const response = await request.get('https://httpbin.org/bearer', {
-    headers: { Authorization: 'Bearer my-test-token' },
+    headers: { Authorization: `Bearer ${token}` },
   });
   expect(response.status()).toBe(200);
+  const body = await response.json();
+  expect(body.authenticated).toBe(true);
 });
 
 test('request without a token returns 401', async ({ request }) => {
