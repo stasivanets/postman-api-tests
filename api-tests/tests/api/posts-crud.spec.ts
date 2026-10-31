@@ -15,7 +15,7 @@ test('DELETE removes a post', async ({ request }) => {
   expect(response.status()).toBe(200);
 });
 
-test('request with a Bearer token succeeds', async ({ request }) => {
+test('request with a valid token succeeds', async ({ request }) => {
   const token = process.env.API_TOKEN;
   test.skip(!token, 'API_TOKEN is not set');
 
